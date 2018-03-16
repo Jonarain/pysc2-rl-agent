@@ -56,6 +56,23 @@ class A2CAgent:
         return returns.flatten()
 
 
+class PPOAgent(A2CAgent):
+    def __init__(self, num_updates=5, batch_sz=8, *args, **kwargs):
+        self.num_updates, self.batch_sz = num_updates, batch_sz
+        super().__init__(*args, **kwargs)
+
+    def train(self, step, states, actions, rewards, dones, last_value):
+        if step % 500 == 0:
+            self.saver.save(self.sess, 'weights/%s/ppo' % self.config.map_id(), global_step=step)
+        returns = self._compute_returns(rewards, dones, last_value)
+        for _ in range(self.num_updates):
+            idx = np.random.choice(returns.shape[0], min(self.batch_sz, returns.shape[0]), replace=False)
+            mb_states, mb_actions, mb_returns = [s[idx] for s in states] + [a[idx] for a in actions] + [returns[idx]]
+            self.sess.run([self.train_op], dict(zip(self.inputs + self.loss_inputs, mb_states + mb_actions + mb_returns)))
+
+    # def _loss_func(self):
+
+
 def select(acts, policy):
     return tf.gather_nd(policy, tf.stack([tf.range(tf.shape(policy)[0]), acts], axis=1))
 

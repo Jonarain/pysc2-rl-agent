@@ -4,9 +4,9 @@ import tensorflow as tf
 
 from common import Config
 from common.env import make_envs
-from rl.agent import A2CAgent
 from rl.model import fully_conv
 from rl import Runner, EnvWrapper
+from rl.agent import A2CAgent, PPOAgent
 
 if __name__ == '__main__':
     flags.FLAGS(['main.py'])
@@ -41,7 +41,8 @@ if __name__ == '__main__':
         config.save(cfg_path)
 
     envs = EnvWrapper(make_envs(args), config)
-    agent = A2CAgent(sess, fully_conv, config, args.restore or args.test, args.discount, args.lr, args.vf_coef, args.ent_coef, args.clip_grads)
+    # agent = A2CAgent(sess, fully_conv, config, args.restore or args.test, args.discount, args.lr, args.vf_coef, args.ent_coef, args.clip_grads)
+    agent = PPOAgent(5, sess, fully_conv, config, args.restore or args.test, args.discount, args.lr, args.vf_coef, args.ent_coef, args.clip_grads)
 
     runner = Runner(envs, agent, args.steps)
     runner.run(args.updates, not args.test)
