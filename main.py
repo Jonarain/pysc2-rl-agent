@@ -2,8 +2,8 @@ import os, argparse
 from absl import flags
 import tensorflow as tf
 
-from common import Config
 from common.env import make_envs
+from common import Config, EnvLogger
 from rl.agent import A2CAgent
 from rl.model import fully_conv
 from rl import Runner, EnvWrapper
@@ -42,7 +42,9 @@ if __name__ == '__main__':
     if not args.restore and not args.test:
         config.save(cfg_path)
 
-    envs = EnvWrapper(make_envs(args), config)
+    envs = make_envs(args)
+    envs = EnvLogger(envs, config)
+    envs = EnvWrapper(envs, config)
     agent = A2CAgent(sess, fully_conv, config, args.restore, args.discount, args.lr, args.vf_coef, args.ent_coef, args.clip_grads)
 
     runner = Runner(envs, agent, args.steps)

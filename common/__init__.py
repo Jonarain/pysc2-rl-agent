@@ -1,5 +1,6 @@
 import numpy as np
 from common.config import Config
+from common.env_logger import EnvLogger
 
 
 def flatten(x):
