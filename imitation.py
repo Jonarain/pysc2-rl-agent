@@ -8,6 +8,7 @@ from rl.agent import clip_log
 from rl.model import fully_conv
 
 
+# TODO extract this to an agent/ module
 class ILAgent:
     def __init__(self, sess, model_fn, config, lr):
         self.sess, self.config, self.lr = sess, config, lr

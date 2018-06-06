@@ -8,6 +8,7 @@ class Runner:
     def __init__(self, envs, agent, n_steps=8):
         self.state = self.logs = self.ep_rews = None
         self.agent, self.envs, self.n_steps = agent, envs, n_steps
+        # TODO move rollout collection somewhere else?
         self.rollouts = [[[] for _ in range(2 + len(agent.config.non_spatial_dims()))], # screen + minimap + non-spatials
                          [[] for _ in range(len(agent.config.policy_dims()))]]
 
