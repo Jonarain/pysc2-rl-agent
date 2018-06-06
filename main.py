@@ -3,7 +3,7 @@ from absl import flags
 import tensorflow as tf
 
 from common.env import make_envs
-from common import Config, EnvLogger
+from common import Config
 from rl.agent import A2CAgent
 from rl.model import fully_conv
 from rl import Runner, EnvWrapper
@@ -22,12 +22,13 @@ if __name__ == '__main__':
     parser.add_argument('--ent_coef', type=float, default=1e-3)
     parser.add_argument('--discount', type=float, default=0.99)
     parser.add_argument('--clip_grads', type=float, default=1.)
-    parser.add_argument("--run_id", type=int, default=-1)
+    parser.add_argument("--run_id", type=str, default=-1)
     parser.add_argument("--map", type=str, default='MoveToBeacon')
     parser.add_argument("--cfg_path", type=str, default='config.json.dist')
     parser.add_argument("--test", type=bool, nargs='?', const=True, default=False)
     parser.add_argument("--restore", type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--save_replay', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--save_rollouts', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
@@ -43,12 +44,11 @@ if __name__ == '__main__':
         config.save(cfg_path)
 
     envs = make_envs(args)
-    envs = EnvLogger(envs, config)
     envs = EnvWrapper(envs, config)
     agent = A2CAgent(sess, fully_conv, config, args.restore, args.discount, args.lr, args.vf_coef, args.ent_coef, args.clip_grads)
 
     runner = Runner(envs, agent, args.steps)
-    runner.run(args.updates, not args.test)
+    runner.run(args.updates, not args.test, args.save_rollouts)
 
     if args.save_replay:
         envs.save_replay()

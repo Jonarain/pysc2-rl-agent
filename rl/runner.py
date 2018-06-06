@@ -1,4 +1,4 @@
-import time
+import time, pickle
 import numpy as np
 from baselines import logger
 from common import flatten_lists
@@ -8,8 +8,10 @@ class Runner:
     def __init__(self, envs, agent, n_steps=8):
         self.state = self.logs = self.ep_rews = None
         self.agent, self.envs, self.n_steps = agent, envs, n_steps
+        self.rollouts = [[[] for _ in range(2 + len(agent.config.non_spatial_dims()))], # screen + minimap + non-spatials
+                         [[] for _ in range(len(agent.config.policy_dims()))]]
 
-    def run(self, num_updates=1, train=True):
+    def run(self, num_updates=1, train=True, save_rollouts=False):
         # based on https://github.com/deepmind/pysc2/blob/master/pysc2/env/run_loop.py
         self.reset()
         try:
@@ -18,12 +20,20 @@ class Runner:
                 rollout = self.collect_rollout()
                 if train:
                     self.agent.train(i, *rollout)
+                if save_rollouts:
+                    for sidx in range(2 + len(self.agent.config.non_spatial_dims())):
+                        self.rollouts[0][sidx].extend(rollout[0][sidx])
+                    for aidx in range(len(self.agent.config.policy_dims())):
+                        self.rollouts[1][aidx].extend(rollout[1][aidx])
         except KeyboardInterrupt:
             pass
         finally:
             elapsed_time = time.time() - self.logs['start_time']
             frames = self.envs.num_envs * self.n_steps * self.logs['updates']
             print("Took %.3f seconds for %s steps: %.3f fps" % (elapsed_time, frames, frames / elapsed_time))
+            if save_rollouts:
+                with open('replays/%s.pkl' % self.agent.config.map_id(), 'wb') as fl:
+                    pickle.dump(self.rollouts, fl)
 
     def collect_rollout(self):
         states, actions = [None]*self.n_steps, [None]*self.n_steps

@@ -78,7 +78,13 @@ class Config:
         return self.map_id() + "/" + str(self.run_id)
 
     def policy_dims(self):
-        return [(len(self.acts), 0)] + [(getattr(TYPES, arg).sizes[0], is_spatial(arg)) for arg in self.act_args]
+        dims = [(len(self.acts), 0)]
+        for arg in self.act_args:
+            dim, sp = getattr(TYPES, arg).sizes[0], is_spatial(arg)
+            if sp:
+                dim = self.sz*self.sz
+            dims.append((dim, sp))
+        return dims
 
     def screen_dims(self):
         return self._dims('screen')
