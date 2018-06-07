@@ -72,9 +72,10 @@ if __name__ == '__main__':
 
     agent = ILAgent(sess, fully_conv, config, args.lr)
 
-    n = min(len(rollouts[0][0]), args.samples)
-    epochs = n // len(rollouts[0][0])
-    n_batches = n // args.batch_sz + 1
+    n = len(rollouts[0][0])
+    epochs = max(1, args.samples // n)
+    n_batches = min(args.samples, n) // args.batch_sz + 1
+    print("n_samples %d, epochs: %d, batches: %d" % (n, epochs, n_batches))
     for _ in range(epochs):
         for _ in range(n_batches):
             idx = np.random.choice(n, args.batch_sz, replace=False)
