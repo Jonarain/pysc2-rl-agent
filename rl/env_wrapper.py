@@ -7,8 +7,8 @@ class EnvWrapper:
         self.envs, self.config = envs, config
 
     def step(self, acts):
-        acts = self.wrap_actions(acts)
-        results = self.envs.step(acts)
+        acts = self.wrap_actions(acts)#打包[actions, args]
+        results = self.envs.step(acts) #执行打包好的[actions, args]
         return self.wrap_results(results)
 
     def reset(self):
@@ -16,13 +16,20 @@ class EnvWrapper:
         return self.wrap_results(results)
 
     def wrap_actions(self, actions):
+        """
+        根据action和action_args的矩阵，
+        输出可以pysc2执行的Function call实例
+        :param actions: action和action_args的矩阵
+        :return: pysc2对应的action ID和pysc2可以执行的args
+        """
+        # 取出action和action的参数
         acts, args = actions[0], actions[1:]
 
         wrapped_actions = []
-        for i, act in enumerate(acts):
+        for i, act in enumerate(acts):#当前顺序i，action的ID act
             act_args = []
-            for arg_type in FUNCTIONS[act].args:
-                act_arg = [DEFAULT_ARGS[arg_type.name]]
+            for arg_type in FUNCTIONS[act].args: #根据action的ID找到参数名称
+                act_arg = [DEFAULT_ARGS[arg_type.name]]#用config定义的默认参数值来初始化
                 if arg_type.name in self.config.act_args:
                     act_arg = [args[self.config.arg_idx[arg_type.name]][i]]
                 if is_spatial(arg_type.name):  # spatial args, convert to coords
@@ -33,6 +40,11 @@ class EnvWrapper:
         return wrapped_actions
 
     def wrap_results(self, results):
+        """
+
+        :param results:
+        :return:states rewards dones
+        """
         obs = [res.observation for res in results]
         rewards = [res.reward for res in results]
         dones = [res.last() for res in results]

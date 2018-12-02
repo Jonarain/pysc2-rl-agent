@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from baselines import logger
+#from baselines import logger
 from common import flatten_lists
 
 
@@ -57,6 +57,7 @@ class Runner:
         frames = self.envs.num_envs * self.n_steps * self.logs['updates']
 
         self.ep_rews = np.mean(self.logs['ep_rew'])
+        """
         logger.logkv('fps', int(frames / elapsed_time))
         logger.logkv('elapsed_time', int(elapsed_time))
         logger.logkv('n_eps', self.logs['eps'])
@@ -68,6 +69,7 @@ class Runner:
         logger.logkv('rew_mestd', np.std(self.logs['ep_rew'])) # weird name to ensure it's above min since logger sorts
         logger.logkv('rew_min', np.min(self.logs['ep_rew']))
         logger.dumpkvs()
+        """
 
         self.logs['dones'] = np.zeros(self.envs.num_envs)
         self.logs['ep_rew'] = np.zeros(self.envs.num_envs)

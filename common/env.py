@@ -4,11 +4,12 @@ from multiprocessing import Process, Pipe
 
 def make_envs(args):
     env_args = dict(map_name=args.map, step_mul=8, game_steps_per_episode=0)
+    a = EnvPool([make_env(args.sz, **dict(env_args, visualize=i < args.render)) for i in range(args.envs)])
     return EnvPool([make_env(args.sz, **dict(env_args, visualize=i < args.render)) for i in range(args.envs)])
 
 
 # based on https://github.com/ikostrikov/pytorch-a2c-ppo-acktr/blob/master/envs.py
-def make_env(sz=32, **params):
+def make_env(sz=32, **params):#传入不定数量的参数 params本质是一个dict
     def _thunk():
         params['screen_size_px'] = params['minimap_size_px'] = (sz, sz)
         env = sc2_env.SC2Env(**params)
@@ -52,7 +53,7 @@ class CloudpickleWrapper(object):
         self.x = pickle.loads(ob)
 
 
-class EnvPool(object):
+class EnvPool(object): #开多线程
     def __init__(self, env_fns):
         nenvs = len(env_fns)
         self.remotes, self.work_remotes = zip(*[Pipe() for _ in range(nenvs)])

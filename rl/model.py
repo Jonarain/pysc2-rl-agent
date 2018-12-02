@@ -7,7 +7,8 @@ def fully_conv(config):
     minimap, minimap_input = cnn_block(config.sz, config.minimap_dims(), config.embed_dim_fn)
     non_spatial, non_spatial_inputs = non_spatial_block(config.sz, config.non_spatial_dims(), config.ns_idx)
 
-    state = tf.concat([screen, minimap, non_spatial], axis=1)
+    state = tf.concat([screen, minimap, non_spatial], axis=1)#合并
+    
     fc1 = layers.fully_connected(layers.flatten(state), num_outputs=256)
     value = tf.squeeze(layers.fully_connected(fc1, num_outputs=1, activation_fn=None), axis=1)
 
@@ -28,18 +29,20 @@ def fully_conv(config):
 def cnn_block(sz, dims, embed_dim_fn):
     block_input = tf.placeholder(tf.float32, [None, sz, sz, len(dims)])
     block = tf.transpose(block_input, [0, 3, 1, 2]) # NHWC -> NCHW
-
-    block = tf.split(block, len(dims), axis=1)
+    #block.shape = (?,17,32,32)
+    block = tf.split(block, len(dims), axis=1)#拆分
+    # len(dims) = 17, 在次元1上把block拆分成17个,有17个(?,1,32,32)组成了新的block
     for i, d in enumerate(dims):
         if d > 1:
-            block[i] = tf.one_hot(tf.to_int32(tf.squeeze(block[i], axis=1)), d, axis=1)
-            block[i] = layers.conv2d(block[i], num_outputs=embed_dim_fn(d), kernel_size=1, data_format="NCHW")
+            block[i] = tf.one_hot(tf.to_int32(tf.squeeze(block[i], axis=1)), d, axis=1)#去掉次元1的大小只有1的次元(?,1,32,32)->(?,4,32,32)
+            block[i] = layers.conv2d(block[i], num_outputs=embed_dim_fn(d), kernel_size=1, data_format="NCHW")#(?,4,32,32)->(?,2,32,32)
         else:
             block[i] = tf.log(block[i] + 1.0)
-    block = tf.concat(block, axis=1)
+    block = tf.concat(block, axis=1)#合并
+    #block.shape = (?,35,32,32)
 
-    conv1 = layers.conv2d(block, num_outputs=16, kernel_size=5, data_format="NCHW")
-    conv2 = layers.conv2d(conv1, num_outputs=32, kernel_size=3, data_format="NCHW")
+    conv1 = layers.conv2d(block, num_outputs=16, kernel_size=5, data_format="NCHW")# (?,35,32,32)->(?,16,32,32)
+    conv2 = layers.conv2d(conv1, num_outputs=32, kernel_size=3, data_format="NCHW")# (?16,32,32)->(?,32,32,32)
 
     return conv2, block_input
 

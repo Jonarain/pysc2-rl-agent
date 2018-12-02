@@ -43,18 +43,20 @@ class Config:
     def __init__(self, sz, map, run_id, embed_dim_fn=lambda x: max(1, round(np.log2(x)))):
         self.run_id = run_id
         self.sz, self.map = sz, map
-        self.embed_dim_fn = embed_dim_fn
+        self.embed_dim_fn = embed_dim_fn  #?
         self.feats = self.acts = self.act_args = self.arg_idx = self.ns_idx = None
 
     def build(self, cfg_path):
+        #读了config，生成了feats acts act_args,然后有的东西就不变，没有的就加上
         feats, acts, act_args = self._load(cfg_path)
+        print(acts)
 
         if 'screen' not in feats:
-            feats['screen'] = features.SCREEN_FEATURES._fields
+            feats['screen'] = features.SCREEN_FEATURES._fields #取出元组的索引(名字)
         if 'minimap' not in feats:
             feats['minimap'] = features.MINIMAP_FEATURES._fields
         if 'non_spatial' not in feats:
-            feats['non_spatial'] = NON_SPATIAL_FEATURES.keys()
+            feats['non_spatial'] = NON_SPATIAL_FEATURES.keys() #取出字典的索引
         self.feats = feats
 
         # TODO not connected to anything atm
@@ -66,7 +68,7 @@ class Config:
             act_args = TYPES._fields
         self.act_args = act_args
 
-        self.arg_idx = {arg: i for i, arg in enumerate(self.act_args)}
+        self.arg_idx = {arg: i for i, arg in enumerate(self.act_args)} #act_args在pysc2里面的定义顺序
         self.ns_idx = {f: i for i, f in enumerate(self.feats['non_spatial'])}
 
     def map_id(self):
@@ -94,6 +96,7 @@ class Config:
         return [self._preprocess(obs, _type) for _type in ['screen', 'minimap'] + self.feats['non_spatial']]
 
     def _dims(self, _type):
+        a = [f.scale ** (f.type == CAT) for f in self._feats(_type)]
         return [f.scale**(f.type == CAT) for f in self._feats(_type)]
 
     def _feats(self, _type):
@@ -115,12 +118,12 @@ class Config:
 
     def save(self, cfg_path):
         with open(cfg_path, 'w') as fl:
-            json.dump({'feats': self.feats, 'act_args': self.act_args}, fl)
+            json.dump({'feats': self.feats, 'act_args': self.act_args}, fl) #写的时候只写了 feats和act_args
 
     def _load(self, cfg_path):
         with open(cfg_path, 'r') as fl:
             data = json.load(fl)
-        return data.get('feats'), data.get('acts'), data.get('act_args')
+        return data.get('feats'), data.get('acts'), data.get('act_args') #读的时候 检查了feats acts act_args
 
 
 def is_spatial(arg):
