@@ -4,11 +4,12 @@ from common.config import DEFAULT_ARGS, is_spatial
 
 class EnvWrapper:
     def __init__(self, envs, config):
-        self.envs, self.config = envs, config
+        self.envs, self.config = envs, config #传入的是pysc2的可识别env, pysc2.bin.agent line74的结果
 
     def step(self, acts):
         acts = self.wrap_actions(acts)#打包[actions, args]
-        results = self.envs.step(acts) #执行打包好的[actions, args]
+        results = self.envs.step(acts)#pysc2 直接执行acts, 返回的results是由pysc2生成的environment.TimeStep(step_type, reward, discount, observation)
+        a = self.wrap_results(results)
         return self.wrap_results(results)
 
     def reset(self):
@@ -35,16 +36,19 @@ class EnvWrapper:
                 if is_spatial(arg_type.name):  # spatial args, convert to coords
                     act_arg = [act_arg[0] % self.config.sz, act_arg[0] // self.config.sz]  # (y,x), fix for PySC2
                 act_args.append(act_arg)
-            wrapped_actions.append(FunctionCall(act, act_args))
+            wrapped_actions.append(FunctionCall(act, act_args)) #pysc2 可以执行的是这个，原本都是数据
 
         return wrapped_actions
 
     def wrap_results(self, results):
         """
-
+        打包pysc2中出来的结果
         :param results:
         :return:states rewards dones
         """
+
+        #从中取出了obs(pysc2风格的list[dict])
+        #rewards([int64])
         obs = [res.observation for res in results]
         rewards = [res.reward for res in results]
         dones = [res.last() for res in results]

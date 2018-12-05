@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.contrib import layers
+from tensorflow.contrib import layers, rnn
 
 
 def fully_conv(config):
@@ -7,8 +7,9 @@ def fully_conv(config):
     minimap, minimap_input = cnn_block(config.sz, config.minimap_dims(), config.embed_dim_fn)
     non_spatial, non_spatial_inputs = non_spatial_block(config.sz, config.non_spatial_dims(), config.ns_idx)
 
-    state = tf.concat([screen, minimap, non_spatial], axis=1)#合并
-    
+
+    state = tf.concat([screen, minimap, non_spatial], axis=1)#合并 shape = (?, 75, 32, 32)
+
     fc1 = layers.fully_connected(layers.flatten(state), num_outputs=256)
     value = tf.squeeze(layers.fully_connected(fc1, num_outputs=1, activation_fn=None), axis=1)
 
@@ -16,11 +17,13 @@ def fully_conv(config):
     # inspired by https://github.com/simonmeister/pysc2-rl-agents/blob/master/rl/networks/fully_conv.py#L131-L137
     policy = []
     for dim, is_spatial in config.policy_dims():
+        print("dim:", dim, ", is_spatial:",is_spatial)
         if is_spatial:
-            logits = layers.conv2d(state, num_outputs=1, kernel_size=1, activation_fn=None, data_format="NCHW")
+            logits = layers.conv2d(state, num_outputs=1, kernel_size=1, activation_fn=None, data_format="NCHW") #(?,1,32,32)
             policy.append(tf.nn.softmax(layers.flatten(logits)))
         else:
             policy.append(layers.fully_connected(fc1, num_outputs=dim, activation_fn=tf.nn.softmax))
+    #policy[0]=(?,524)
     policy[0] = mask_probs(policy[0], non_spatial_inputs[config.ns_idx['available_actions']])
 
     return [policy, value], [screen_input, minimap_input] + non_spatial_inputs
@@ -40,7 +43,11 @@ def cnn_block(sz, dims, embed_dim_fn):
             block[i] = tf.log(block[i] + 1.0)
     block = tf.concat(block, axis=1)#合并
     #block.shape = (?,35,32,32)
-
+    """
+    p10
+    We pass screen and minimap observations through separate 2-layer convolutional networks 
+    with 16, 32 filters of size 5 × 5, 3 × 3 respectively.
+    """
     conv1 = layers.conv2d(block, num_outputs=16, kernel_size=5, data_format="NCHW")# (?,35,32,32)->(?,16,32,32)
     conv2 = layers.conv2d(conv1, num_outputs=32, kernel_size=3, data_format="NCHW")# (?16,32,32)->(?,32,32,32)
 

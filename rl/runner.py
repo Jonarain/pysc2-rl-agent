@@ -57,6 +57,7 @@ class Runner:
         frames = self.envs.num_envs * self.n_steps * self.logs['updates']
 
         self.ep_rews = np.mean(self.logs['ep_rew'])
+
         """
         logger.logkv('fps', int(frames / elapsed_time))
         logger.logkv('elapsed_time', int(elapsed_time))

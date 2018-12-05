@@ -79,7 +79,7 @@ class Config:
             return self.map_id()
         return self.map_id() + "/" + str(self.run_id)
 
-    def policy_dims(self):
+    def policy_dims(self):# 这里的+是合并两个[()]
         return [(len(self.acts), 0)] + [(getattr(TYPES, arg).sizes[0], is_spatial(arg)) for arg in self.act_args]
 
     def screen_dims(self):
@@ -93,6 +93,8 @@ class Config:
 
     # TODO maybe move preprocessing code into separate class?
     def preprocess(self, obs):
+        #obs = pysc2风格的observation
+        #_type = ['screen', 'minimap', self.feats['non_spatial']里面的内容]
         return [self._preprocess(obs, _type) for _type in ['screen', 'minimap'] + self.feats['non_spatial']]
 
     def _dims(self, _type):
@@ -103,10 +105,20 @@ class Config:
         feats = getattr(features, _type.upper() + '_FEATURES')
         return [getattr(feats, f_name) for f_name in self.feats[_type]]
 
+    def test(self):
+        for _type in ['screen', 'minimap'] + self.feats['non_spatial']:
+            print(_type)
+
     def _preprocess(self, obs, _type):
+        #obs = pysc2风格的observation
+        #_type = ['screen', 'minimap', self.feats['non_spatial']里面的内容]
+
+        #处理non_spatial
         if _type in self.feats['non_spatial']:
             return np.array([self._preprocess_non_spatial(ob, _type) for ob in obs])
-        spatial = [[ob[_type][f.index] for f in self._feats(_type)] for ob in obs]
+
+        #处理spatial
+        spatial = [[ob[_type][f.index] for f in self._feats(_type)] for ob in obs]#ob是obs这个由dict组成的list里面的一个dict
         return np.array(spatial).transpose((0, 2, 3, 1))
 
     def _preprocess_non_spatial(self, ob, _type):
